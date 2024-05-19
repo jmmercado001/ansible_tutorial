@@ -5,19 +5,49 @@
   pre_tasks:
 
 
-  - name: Install updates (Rocky)
+  - name: update repo cache (Rocky)
     tags: always               
     dnf:
-      update_only: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Rocky"
 
-  - name: Install updates (Ubuntu)
+  - name: update repo cache (Ubuntu)
     tags: always
     apt:
-      only_upgrade: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: add ssh key for simone
+    tags: always
+    authorized_key:
+      user: simone
+      key: "{{ lookup('file', '/home/juan/.ssh/id_ed25519.pub') }}" 
+  
+
+- hosts: workstations
+  become: true
+  tasks:
+
+  - name: Install unzip
+    package:
+      name: unzip
+     
+  - name: install terraform
+    unarchive:
+      src: https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip
+      dest: /usr/local/bin
+      remote_src: yes
+      mode: 0755
+      owner: root
+      group: root
+
+
 
 - hosts: web_server
   become: true
@@ -31,6 +61,24 @@
         - libapache2-mod-php
       state: latest
     when: ansible_distribution == "Ubuntu"
+
+
+  - name: change e-mail address for admin
+    tags: apache,rocky,httpd
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "Rocky"
+    register: httpd
+
+  - name: restart httpd (Rocky)
+    tags: apache,rocky,httpd
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed  
+
 
   - name: copy default html files for site
     tags: apache,apache2,httpd
@@ -51,6 +99,14 @@
         - httpd
         - php
       state: latest
+    when: ansible_distribution == "Rocky" 
+
+  - name: start httpd (Rocky)
+    tags: apache,rocky,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: yes
     when: ansible_distribution == "Rocky" 
 
 
@@ -81,11 +137,5 @@
     package:
       name: samba
       state: latest
-# - name: Start httpd
-#    service:
-#      name: httpd
-#      state: started
-#      enabled: yes
-
 
 
