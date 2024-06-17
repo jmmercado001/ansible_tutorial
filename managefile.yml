@@ -1,0 +1,49 @@
+---
+- name: managing files with ansible
+  hosts: all
+  become: true
+  gather_facts: no
+  vars:
+    dir: "/home/juan/DemoDir"
+  tasks:
+
+    - name: create a directory
+      file:
+        path: /home/juan/DemoDir
+        state: directory 
+
+    - name: create a file
+      file:
+        path: /home/juan/DemoDir/demo2.txt
+        state: touch
+        
+    - name: create directory recursively
+      file:
+        path: /home/DemoDir1/DemoDir2/DemoDir3
+        state: directory
+
+
+    - name: create multiple files
+      file:
+        path: /home/juan/file{{ item }}.txt
+        state: absent
+#        state: touch
+      loop: "{{ range(1,4) | list }} "
+     
+    - name: copy file name site.yml to remote machines
+      copy:
+        src: /home/juan/.ssh/ansible_tutorial/site.yml
+        dest: /home/
+        owner: root
+        group: root
+        mode: 0777
+    
+    - name: check if directory exist
+      stat:
+        path: "{{ dir }}"
+      register: dir_to_check
+      
+    - name: Directory found
+      debug:
+        msg: " Directory {{ dir }} present"
+      when: dir_to_check.stat.isdir is defined and dir_to_check.stat.isdir   

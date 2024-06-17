@@ -1,0 +1,27 @@
+---
+- name: loop example
+  hosts: all
+  become: yes
+  vars:
+    users:
+      juan:
+        name: Juan Mercado
+        telephone: 123-456-7890
+      marisol: 
+        name: Marisol Aguilera
+        telephone: 567-232-9999
+      alex:
+        name: Alex Hernandez
+        telephone: 777-444-3333
+  
+  tasks:
+    - name: print records
+      debug:
+        msg: "Users {{ item.key }} is {{ item.value.name }} ({{ item.value.telephone }})"
+      loop: "{{ lookup('dict', users) }}"
+      register: telephone_file
+    - name: save data to file
+      copy:
+        content: "{{ telephone_file }}"
+        dest: "/home/telephone_file"
+
